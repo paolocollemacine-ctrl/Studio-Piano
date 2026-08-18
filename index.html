@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Studio al Pianoforte · Suite Completa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="wrap">
+
+    <header class="masthead" role="banner">
+        <div class="title-block">
+            <div class="mark" aria-hidden="true">🎹</div>
+            <div>
+                <h1>Studio al Pianoforte</h1>
+                <div class="sub">Quaderno di esercizi · Strumenti · Improvvisazione</div>
+            </div>
+        </div>
+        <div class="theme-toggle" role="group" aria-label="Selezione tema">
+            <button data-theme-btn="dark" aria-pressed="true">Scuro</button>
+            <button data-theme-btn="light" aria-pressed="false">Chiaro</button>
+        </div>
+    </header>
+
+    <div id="view-home" role="main"><div id="today-summary"></div><div class="grid" id="cat-grid"></div></div>
+
+    <div id="view-cat" class="hidden" role="main">
+        <div class="topbar"><button class="back" id="btn-back" aria-label="Torna alla home">&#8592; Tutte le categorie</button></div>
+        <h2 class="cat-title" id="cat-title-text"></h2>
+        <div class="metronomo-container" id="metronomo-global">
+            <span class="label" id="metronomo-label">🎵 Metronomo</span>
+            <div class="bpm-controls">
+                <button class="bpm-step-btn" data-step="-1" aria-label="Diminuisci BPM">−</button>
+                <input type="range" min="0" max="38" step="1" value="10" id="bpm-slider-global" aria-label="BPM slider" />
+                <button class="bpm-step-btn" data-step="1" aria-label="Aumenta BPM">+</button>
+                <span class="bpm-val" id="bpm-val-global" aria-live="polite">80</span>
+            </div>
+            <select class="time-select" id="time-select-global" aria-label="Indicazione di tempo">
+                <option value="1/1">1/1 (senza battute)</option>
+                <option value="4/4" selected>4/4</option>
+                <option value="3/4">3/4</option>
+                <option value="6/8">6/8</option>
+                <option value="2/2">2/2</option>
+            </select>
+            <button class="btn-metronome" id="metronome-btn-global" aria-label="Avvia/ferma metronomo">Avvia</button>
+            <div class="beat-indicator" id="beat-indicator-global" role="status" aria-live="polite">
+                <span class="beat-dot" data-beat="0"></span>
+                <span class="beat-dot" data-beat="1"></span>
+                <span class="beat-dot" data-beat="2"></span>
+                <span class="beat-dot" data-beat="3"></span>
+            </div>
+        </div>
+        <div id="exercise-list"></div>
+        <div class="add-exercise"><button class="btn btn-accent" id="btn-add-exercise">+ Aggiungi esercizio</button></div>
+    </div>
+
+    <div id="view-lezioni" class="hidden" role="main">
+        <div class="topbar"><button class="back" id="btn-back-lezioni" aria-label="Torna alla home">&#8592; Tutte le categorie</button></div>
+        <h2 class="cat-title" id="lezioni-title-text">Lezioni</h2>
+        <div id="lezioni-list"></div>
+        <div class="add-exercise"><button class="btn btn-accent" id="btn-add-lezione">+ Aggiungi lezione</button></div>
+    </div>
+
+    <div id="view-circle" class="hidden" role="main">
+        <div class="topbar"><button class="back" id="btn-back-circle" aria-label="Torna alla home">&#8592; Tutte le categorie</button></div>
+        <h2 class="cat-title" id="circle-title-text" style="margin-bottom:8px;">Circolo delle Quinte</h2>
+        <div style="color:var(--text-muted);font-size:14px;margin-bottom:12px;" role="status">Clicca un accordo maggiore o minore per scoprire le note della scala</div>
+        <div class="circle-stage">
+            <div class="circle-wheel-wrap"><svg viewBox="0 0 800 800" id="circle-wheel" role="img" aria-label="Circolo delle quinte interattivo"></svg></div>
+            <div class="circle-panel" id="circle-panel">
+                <button class="btn-random" id="randomBtn" aria-label="Seleziona una scala casuale">🎲 Scala casuale</button>
+                <div class="eyebrow" id="p-eyebrow">Nessuna selezione</div>
+                <h2 id="p-title">—</h2>
+                <div class="quality" id="p-quality">Seleziona una tonalità dal cerchio</div>
+                <div id="p-body"><div class="hint">Il cerchio esterno mostra l'armatura di chiave. L'anello viola sono le tonalità maggiori, l'anello interno le relative minori naturali.</div></div>
+            </div>
+        </div>
+        <h2 class="cat-title" style="margin-top:32px;">Arpeggio casuale · Diteggiatura</h2>
+        <div class="arpeggi-container">
+            <div class="arpeggi-controls">
+                <label for="arpeggi-tonic" class="hidden">Tonica</label>
+                <select id="arpeggi-tonic"><option value="C">Do</option><option value="G">Sol</option><option value="D">Re</option><option value="A">La</option><option value="E">Mi</option><option value="B">Si</option><option value="F#">Fa#</option><option value="Db">Reb</option><option value="Ab">Lab</option><option value="Eb">Mib</option><option value="Bb">Sib</option><option value="F">Fa</option></select>
+                <label for="arpeggi-type" class="hidden">Tipo</label>
+                <select id="arpeggi-type"><option value="major">Maggiore</option><option value="minor">Minore</option><option value="diminished">Diminuito</option><option value="augmented">Aumentato</option></select>
+                <button class="btn-accent" id="arpeggi-random">🎲 Casuale</button>
+            </div>
+            <div class="arpeggi-panel">
+                <div class="arpeggi-notes" id="arpeggi-notes-display"><span class="label">Note</span></div>
+                <div class="arpeggi-diteggiatura" id="arpeggi-diteggiatura-display">
+                    <div class="hand"><span class="title">Mano destra</span><div class="sequence" id="arpeggi-rh"></div></div>
+                    <div class="hand"><span class="title">Mano sinistra</span><div class="sequence" id="arpeggi-lh"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-scale-list" class="hidden" role="main">
+        <div class="topbar"><button class="back" id="btn-back-scale-list" aria-label="Torna alla home">&#8592; Tutte le categorie</button></div>
+        <h2 class="cat-title" id="scale-list-title-text" style="margin-bottom:8px;">Scale</h2>
+        <div style="color:var(--text-muted);font-size:14px;margin-bottom:14px;" role="status">Clicca un pallino per segnare lo stato: grigio → verde → giallo → rosso → grigio</div>
+        <div id="scale-checklist"></div>
+        <h2 class="cat-title" style="margin-top:32px;">Esercizi</h2>
+        <div id="scale-exercise-list"></div>
+        <div class="add-exercise"><button class="btn btn-accent" id="btn-add-exercise-scale">+ Aggiungi esercizio</button></div>
+    </div>
+
+    <div id="view-arpeggi" class="hidden" role="main">
+        <div class="topbar"><button class="back" id="btn-back-arpeggi" aria-label="Torna alla home">&#8592; Tutte le categorie</button></div>
+        <h2 class="cat-title" id="arpeggi-title-text" style="margin-bottom:8px;">Arpeggi</h2>
+        <div style="color:var(--text-muted);font-size:14px;margin-bottom:14px;" role="status">Clicca un pallino per segnare lo stato: grigio → verde → giallo → rosso → grigio</div>
+        <div id="arpeggi-checklist"></div>
+        <h2 class="cat-title" style="margin-top:32px;">Esercizi</h2>
+        <div id="arpeggi-exercise-list"></div>
+        <div class="add-exercise"><button class="btn btn-accent" id="btn-add-exercise-arpeggi">+ Aggiungi esercizio</button></div>
+    </div>
+
+    <div id="view-komplete" class="hidden" role="main">
+        <div class="topbar"><button class="back" id="btn-back-komplete" aria-label="Torna alla home">&#8592; Tutte le categorie</button></div>
+        <h2 class="cat-title" id="komplete-title-text" style="margin-bottom:4px;">Consulente Suoni</h2>
+        <div style="color:var(--text-muted);font-size:14px;margin-bottom:8px;" role="status">Scegli il genere o un mood: gli strumenti più pertinenti si ordinano in cima.</div>
+        <div class="komplete-mood-section">
+            <div class="komplete-mood-label">🎭 Scegli l'umore per l'improvvisazione</div>
+            <div class="komplete-mood-grid" id="kompleteMoodGrid" role="group" aria-label="Mood buttons">
+                <button class="komplete-mood-btn" data-mood="happy">🎉 Felice</button>
+                <button class="komplete-mood-btn" data-mood="melancholic">😢 Malinconico</button>
+                <button class="komplete-mood-btn" data-mood="energetic">🔥 Energico</button>
+                <button class="komplete-mood-btn" data-mood="dreamy">🌙 Sognante</button>
+                <button class="komplete-mood-btn" data-mood="dark">🖤 Scuro</button>
+                <button class="komplete-mood-btn" data-mood="cinematic">🎬 Cinematico</button>
+                <button class="komplete-mood-btn" data-mood="groovy">🕺 Groovy</button>
+                <button class="komplete-mood-btn" data-mood="intimate">🤗 Intimo</button>
+            </div>
+        </div>
+        <div class="komplete-mood-result" id="kompleteMoodResult">
+            <button class="mood-close" id="kompleteMoodClose" aria-label="Chiudi suggerimenti">✕</button>
+            <div class="komplete-mood-result-header"><span class="mood-emoji" id="kmMoodEmoji">😢</span><h3 id="kmMoodName">Malinconico</h3></div>
+            <div class="komplete-mood-instruments"><h4>🎹 Strumenti consigliati:</h4><div id="kmMoodInstruments"></div></div>
+            <div class="komplete-mood-scaler"><h4>🎼 Per Scaler 3:</h4><div id="kmMoodScaler"></div></div>
+            <div class="komplete-mood-actions">
+                <button class="btn-primary" id="kmMoodApply">🎯 Applica filtri</button>
+                <button class="btn-secondary" id="kmMoodCopy">📋 Copia consigli</button>
+            </div>
+        </div>
+        <div class="komplete-controls">
+            <div class="komplete-search">
+                <span class="icon" aria-hidden="true">🔍</span>
+                <label for="kompleteSearch" class="hidden">Cerca strumento</label>
+                <input type="text" id="kompleteSearch" placeholder="Cerca strumento..." aria-label="Cerca strumento" />
+            </div>
+            <button class="komplete-clear" id="kompleteClearFilters">✕ Deseleziona tutto</button>
+        </div>
+        <div class="komplete-filters-label"><span>🎯 Genere / tipo di suono</span><span class="count" id="kompleteFilterCount">0 selezionati</span></div>
+        <div class="komplete-filters" id="kompleteFilters" role="group" aria-label="Filtri genere"></div>
+        <div class="komplete-stats" id="kompleteStats"></div>
+        <div class="komplete-legend">
+            <span>Pertinenza:</span>
+            <span class="lmeter"><span class="seg on"></span><span class="seg on"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></span> layer
+            <span class="lmeter"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg"></span></span> buona
+            <span class="lmeter"><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span></span> primaria
+            <span style="margin-left:auto;display:flex;gap:10px;align-items:center;font-size:11px;">
+                <span style="color:var(--komplete-fav);">❤</span> Preferito
+                <span style="color:var(--komplete-compare);">⬜</span> Confronta
+                <span style="color:var(--accent);">⭐</span> Suggeriti
+            </span>
+        </div>
+        <div class="komplete-grid" id="kompleteGrid"></div>
+        <div style="margin-top:12px;color:var(--text-muted);font-size:12px;text-align:center;">💡 Clicca sulla stellina ❤ per salvare i preferiti · Clicca su ⬜ per confrontare strumenti · Usa il Mood Matcher 🎭</div>
+    </div>
+
+    <div id="view-improv" class="hidden" role="main">
+        <div class="topbar"><button class="back" id="btn-back-improv" aria-label="Torna alla home">&#8592; Tutte le categorie</button></div>
+        <h2 class="cat-title" id="improv-title-text" style="margin-bottom:4px;">Practice Station</h2>
+        <div style="color:var(--text-muted);font-size:14px;margin-bottom:12px;" role="status">Jazz &amp; Blues · Accordi, Scale e Lick per l'improvvisazione</div>
+        <div class="improv-container" id="improvContainer">
+            <div class="improv-nav" role="tablist">
+                <button class="improv-nav-link active" data-style="jazz" role="tab" aria-selected="true">Jazz Station</button>
+                <button class="improv-nav-link" data-style="blues" role="tab" aria-selected="false">Blues Station</button>
+            </div>
+            <div class="improv-title" id="improvTitle">Jazz Practice Station V4</div>
+            <div class="improv-subtitle" id="improvSubtitle">Studio Accordi Manuale + Idee Fraseggio Lick</div>
+            <div class="improv-controls">
+                <div class="left">
+                    <button class="improv-btn-play" id="improvPlayBtn" aria-label="Avvia/ferma riproduzione">START</button>
+                    <label for="improvSelect" class="hidden">Seleziona progressione</label>
+                    <select class="improv-select" id="improvSelect"></select>
+                </div>
+                <div class="improv-bpm-control">
+                    <label style="font-size:12px;text-transform:none;letter-spacing:0;color:var(--text-muted);margin:0;">Tempo:</label>
+                    <input type="range" id="improvBpm" min="40" max="208" value="75" aria-label="BPM" />
+                    <span class="improv-bpm-val" id="improvBpmVal">75 BPM</span>
+                </div>
+            </div>
+            <div class="improv-beat" id="improvBeat" role="status" aria-live="polite">
+                <div class="improv-beat-dot" data-beat="0"></div>
+                <div class="improv-beat-dot" data-beat="1"></div>
+                <div class="improv-beat-dot" data-beat="2"></div>
+                <div class="improv-beat-dot" data-beat="3"></div>
+            </div>
+            <div class="improv-status">
+                <div class="block"><div class="label">Accordo</div><div class="value accent" id="improvChordName">--</div></div>
+                <div class="block"><div class="label">Mano SX (Voicing)</div><div class="value" id="improvLH" style="font-size:16px;color:var(--accent);">--</div></div>
+                <div class="block"><div class="label">Scala Suggerita (DX)</div><div class="value" id="improvRH" style="font-size:16px;color:var(--text);">--</div></div>
+            </div>
+            <div class="improv-chords" id="improvChords"></div>
+            <div class="improv-lick">
+                <div class="title" id="improvLickTitle">💡 Suggerimento Fraseggio</div>
+                <div class="text" id="improvLickText">Seleziona o riproduci un accordo per visualizzare le tecniche di improvvisazione.</div>
+            </div>
+            <div class="improv-keyboard-wrap"><div class="improv-keyboard" id="improvKeyboard" role="img" aria-label="Tastiera interattiva"></div></div>
+            <div class="improv-legend" id="improvLegend">
+                <div class="item"><span class="color accent"></span> LH: 3a &amp; 7a (shell voicing)</div>
+                <div class="item"><span class="color accent-soft"></span> RH: Target Tones</div>
+                <div class="item"><span class="color accent-soft" style="background:transparent;border:2px solid var(--accent);"></span> RH: Passing Tones</div>
+            </div>
+            <div class="improv-guide" id="improvGuide">
+                <h3>Guida</h3>
+                <div id="improvGuideText">
+                    <p>Clicca su una scheda accordo per visualizzare note, scale e lick sulla tastiera, anche a riproduzione ferma.</p>
+                    <ul>
+                        <li><strong>Mano Sinistra:</strong> 3a e 7a dell'accordo (shell voicing) per far sentire il cambio armonico.</li>
+                        <li><strong>Mano Destra:</strong> Target Tones (note dell'accordo) e Passing Tones (note di passaggio della scala).</li>
+                        <li><strong>Lick:</strong> idee di fraseggio contestuali all'accordo selezionato.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-armonia" class="hidden" role="main">
+        <button class="back" id="btn-back-armonia" aria-label="Torna alla home">&#8592; Tutte le categorie</button>
+        <h2 class="cat-title" id="armonia-title-text" style="margin-bottom:8px;margin-top:14px;">Crea Armonia</h2>
+        <p class="arm-subtitle">Strumento di co-composizione avanzata. Costruisci la tua progressione e calcola istantaneamente i voicing ideali per pianoforte e tastiere.</p>
+        <div class="arm-layout">
+          <div class="arm-wheel-wrap"><svg id="arm-wheel" width="600" height="600" viewBox="0 0 800 800"></svg></div>
+          <div class="arm-side">
+            <div class="arm-card"><h2>Stato</h2><div id="arm-status">Clicca un accordo qualsiasi per iniziare la sequenza.</div></div>
+            <div class="arm-card"><h2>Legenda relazioni</h2>
+              <div class="arm-legend-row"><span class="arm-line-sample" style="border-color:var(--arm-dom7)"></span> dominante (V7 &rarr; I)</div>
+              <div class="arm-legend-row"><span class="arm-line-sample" style="border-color:var(--arm-iiv)"></span> ii &rarr; V</div>
+              <div class="arm-legend-row"><span class="arm-line-sample" style="border-color:var(--arm-subdom)"></span> sottodominante (I &harr; IV)</div>
+              <div class="arm-legend-row"><span class="arm-line-sample" style="border-color:var(--arm-submediant)"></span> vi &harr; IV (pop/epico)</div>
+              <div class="arm-legend-row"><span class="arm-line-sample" style="border-color:var(--arm-relminor)"></span> relativa minore</div>
+              <div class="arm-legend-row"><span class="arm-line-sample" style="border-color:var(--arm-parminor)"></span> parallela (scambio modale)</div>
+              <div class="arm-legend-row"><span class="arm-line-sample" style="border-color:var(--arm-aug); border-top-style:dashed"></span> aumentata (simmetria)</div>
+              <div class="arm-legend-row"><span class="arm-line-sample" style="border-color:var(--arm-tritone); border-top-style:dashed"></span> sostituzione di tritono</div>
+            </div>
+          </div>
+          <div class="arm-card arm-preset-card"><h2>Ispirazioni Rapide (Preset Moods)</h2>
+            <div class="arm-preset-select-wrap"><select class="arm-preset-select" id="arm-presetSelect"><option value="" disabled selected>-- Seleziona un'atmosfera --</option></select></div>
+          </div>
+          <div class="arm-card arm-chain-card"><h2>Sequenza</h2>
+            <div class="arm-chain-row" id="arm-chainRow"><span class="arm-empty-chain">La catena è vuota.</span></div>
+            <div class="arm-btn-row"><button class="arm-btn" id="arm-undoBtn">Annulla ultimo</button><button class="arm-btn" id="arm-resetBtn">Svuota tutto</button></div>
+          </div>
+          <div class="arm-card arm-voicing-card"><h2 id="arm-voicingTitle">Estensioni &amp; Voicing</h2>
+            <div class="arm-voicing-sub" id="arm-voicingSub">Seleziona un accordo per vedere le sue estensioni (9, 13, sus4, dim, aug7...).</div>
+            <div class="arm-voicing-grid" id="arm-voicingGrid"></div>
+          </div>
+        </div>
+    </div>
+
+    <footer class="appfoot">
+        Dati salvati automaticamente su questo browser &middot;
+        <button id="btn-export" aria-label="Esporta backup">esporta backup</button> &middot;
+        <button id="btn-import" aria-label="Importa backup">importa backup</button>
+        <input type="file" id="file-import" accept="application/json" class="hidden" aria-label="Scegli file backup">
+    </footer>
+</div>
+
+<div class="komplete-compare-bar" id="kompleteCompareBar">
+    <span style="font-size:12px;color:var(--text-muted);">Confronto:</span>
+    <div id="kompleteCompareItems"></div>
+    <button class="compare-btn" id="kompleteCompareBtn" aria-label="Confronta strumenti selezionati">📊 Confronta</button>
+    <button class="clear-compare" id="kompleteClearCompare" aria-label="Cancella confronto">Cancella</button>
+</div>
+
+<div class="komplete-compare-modal" id="kompleteCompareModal" role="dialog" aria-modal="true">
+    <div class="modal-content">
+        <div class="modal-header"><h2>📊 Confronto Strumenti</h2><button class="close-modal" id="kompleteCloseCompare" aria-label="Chiudi confronto">✕</button></div>
+        <div id="kompleteCompareTable"></div>
+    </div>
+</div>
+
+<div class="komplete-fav-indicator" id="kompleteFavIndicator" role="status">
+    <span class="heart">❤</span><span>Preferiti:</span><span class="count" id="kompleteFavCount">0</span>
+</div>
+
+<div class="komplete-toast" id="kompleteToast" role="alert" aria-live="polite">
+    <div class="toast-content">
+        <span class="toast-icon" id="kToastIcon">💡</span>
+        <div class="toast-body">
+            <div id="kToastMessage"></div>
+            <div class="toast-actions" id="kToastActions"></div>
+        </div>
+        <button class="toast-close" id="kToastClose" aria-label="Chiudi notifica">✕</button>
+    </div>
+</div>
+
+<script src="app.js" defer></script>
+</body>
+</html>

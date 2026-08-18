@@ -1,4 +1,112 @@
 // ============================================================
+// 0. Sincronizzazione cloud (Firebase) - opzionale e non bloccante
+// Stesso progetto Firebase del Calendario Famiglia, collezione separata.
+// Se il caricamento fallisce (es. anteprima sandboxata), l'app continua
+// a funzionare in locale con localStorage, esattamente come prima.
+// ============================================================
+const PIANO_TS_KEY = 'studio_pianoforte_v2_ts';
+let cloudSaveTimeout = null;
+let applyingRemoteUpdate = false;
+let firstSnapshotHandled = false;
+let cloudReady = false;
+let pendingCloudSave = false;
+let cloudDocRef = null, setDocFn = null;
+
+function getLocalTs(){ return parseInt(localStorage.getItem(PIANO_TS_KEY) || '0', 10); }
+function setLocalTs(ts){ try{ localStorage.setItem(PIANO_TS_KEY, String(ts)); }catch(e){} }
+
+function isTypingNow(){
+    const el = document.activeElement;
+    return !!(el && el.closest && el.closest('input, textarea, [contenteditable="true"]'));
+}
+
+function scheduleCloudSave(){
+    if(applyingRemoteUpdate) return;
+    const ts = Date.now();
+    setLocalTs(ts);
+    if(!cloudReady){ pendingCloudSave = true; return; }
+    if(cloudSaveTimeout) clearTimeout(cloudSaveTimeout);
+    const snapshot = JSON.stringify(appData);
+    cloudSaveTimeout = setTimeout(()=>{
+        setDocFn(cloudDocRef, {data: snapshot, updatedAt: ts})
+            .catch(err=>console.error('Errore salvataggio cloud', err));
+    }, 400);
+}
+
+function rerenderAllPiano(){
+    if (typeof renderHome === 'function') renderHome();
+    if (currentCatId && typeof renderCategory === 'function') renderCategory();
+}
+
+async function initFirebaseSyncPiano(){
+    try{
+        const [{ initializeApp }, { getFirestore, doc, setDoc, onSnapshot }, { getAuth, signInAnonymously }] = await Promise.all([
+            import("https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js"),
+            import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js"),
+            import("https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js")
+        ]);
+        const firebaseConfig = {
+            apiKey: "AIzaSyAanqWhRF_OsRD-XVYFcn11RmGMDMAbCuQ",
+            authDomain: "calendario-famiglia-79cc3.firebaseapp.com",
+            projectId: "calendario-famiglia-79cc3",
+            storageBucket: "calendario-famiglia-79cc3.firebasestorage.app",
+            messagingSenderId: "161183128508",
+            appId: "1:161183128508:web:32b9cd3019884bbf25a9b9"
+        };
+        const fbApp = initializeApp(firebaseConfig);
+        const db = getFirestore(fbApp);
+        const auth = getAuth(fbApp);
+        setDocFn = setDoc;
+        cloudDocRef = doc(db, "studiopiano", "dati");
+
+        const user = await signInAnonymously(auth).then(cred=>cred.user).catch(()=>null);
+        if(!user) throw new Error('Autenticazione cloud non riuscita');
+
+        onSnapshot(cloudDocRef, (snap)=>{
+            if(snap.exists()){
+                const remote = snap.data();
+                const remoteTs = remote && remote.updatedAt ? remote.updatedAt : 0;
+                const localTs = getLocalTs();
+                if(remote && remote.data && remote.data !== JSON.stringify(appData)){
+                    if(remoteTs < localTs){
+                        if(cloudReady){
+                            setDocFn(cloudDocRef, {data: JSON.stringify(appData), updatedAt: localTs}).catch(err=>console.error(err));
+                        }
+                    } else if(isTypingNow()){
+                        // riprova tra poco, non interrompere mentre l'utente sta scrivendo
+                        setTimeout(()=>{ if(!isTypingNow()) scheduleCloudSave(); }, 1500);
+                    } else {
+                        try{
+                            const parsed = JSON.parse(remote.data);
+                            applyingRemoteUpdate = true;
+                            appData = normalizeData(parsed);
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+                            setLocalTs(remoteTs);
+                            rerenderAllPiano();
+                        } finally { applyingRemoteUpdate = false; }
+                    }
+                }
+            } else {
+                setDoc(cloudDocRef, {data: JSON.stringify(appData), updatedAt: getLocalTs() || Date.now()});
+            }
+            firstSnapshotHandled = true;
+        }, (err)=>{ console.error('Errore sincronizzazione cloud', err); });
+
+        cloudReady = true;
+        if(pendingCloudSave){ pendingCloudSave = false; scheduleCloudSave(); }
+    }catch(err){
+        console.warn('Sincronizzazione cloud non disponibile in questo contesto:', err);
+    }
+}
+
+window.addEventListener('beforeunload', ()=>{
+    if(cloudSaveTimeout && cloudReady && setDocFn && cloudDocRef){
+        clearTimeout(cloudSaveTimeout);
+        setDocFn(cloudDocRef, {data: JSON.stringify(appData), updatedAt: getLocalTs()}).catch(()=>{});
+    }
+});
+
+// ============================================================
 // 1. GESTIONE DATI E STATO
 // ============================================================
 const STORAGE_KEY = 'studio_pianoforte_v2';
@@ -39,19 +147,8 @@ let currentCatId = null;
 // ============================================================
 // 2. CARICAMENTO DATI
 // ============================================================
-function loadData() {
-    let d;
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) d = structuredClone(DEFAULT_DATA);
-        else {
-            const parsed = JSON.parse(raw);
-            d = (!parsed.categories) ? structuredClone(DEFAULT_DATA) : parsed;
-        }
-    } catch (e) {
-        console.error('Errore lettura dati', e);
-        d = structuredClone(DEFAULT_DATA);
-    }
+function normalizeData(d) {
+    if (!d.categories) d = structuredClone(DEFAULT_DATA);
     d.categories.forEach((cat, i) => {
         if (!cat.color) cat.color = PASTEL_PALETTE[i % PASTEL_PALETTE.length];
     });
@@ -68,8 +165,24 @@ function loadData() {
     });
     if (!d.scaleChecklist || typeof d.scaleChecklist !== 'object') d.scaleChecklist = {};
     if (!d.arpeggiChecklist || typeof d.arpeggiChecklist !== 'object') d.arpeggiChecklist = {};
-    appData = d;
     return d;
+}
+
+function loadData() {
+    let d;
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) d = structuredClone(DEFAULT_DATA);
+        else {
+            const parsed = JSON.parse(raw);
+            d = (!parsed.categories) ? structuredClone(DEFAULT_DATA) : parsed;
+        }
+    } catch (e) {
+        console.error('Errore lettura dati', e);
+        d = structuredClone(DEFAULT_DATA);
+    }
+    appData = normalizeData(d);
+    return appData;
 }
 
 function saveData() {
@@ -79,6 +192,7 @@ function saveData() {
         alert('Impossibile salvare i dati nel browser. Esporta un backup.');
         console.error(e);
     }
+    if (typeof scheduleCloudSave === 'function') scheduleCloudSave();
 }
 
 function uid(prefix) { return prefix + '_' + Math.random().toString(36).slice(2, 9); }
@@ -2331,6 +2445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Metronome.init();
     }
     renderHome();
+    initFirebaseSyncPiano();
 
     // Gestione sicura dei pulsanti di ritorno generici
     document.querySelectorAll('.back').forEach(btn => {

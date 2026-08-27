@@ -630,6 +630,18 @@ function buildExerciseBody(ex, cat, el, rerender) {
     body.innerHTML = `
         <label for="f-name-${ex.id}">Nome esercizio</label>
         <input type="text" id="f-name-${ex.id}" class="f-name" value="${escapeAttr(ex.name || '')}" placeholder="Es. Scala di Do maggiore, 4 ottave">
+        ${cat.id === 'arpeggi' ? `
+        <div class="speed-row">
+          <div class="field">
+            <label for="f-fing-sx-${ex.id}">Diteggiatura SX</label>
+            <input type="text" id="f-fing-sx-${ex.id}" class="f-fing-sx" value="${escapeAttr(ex.fingeringSx || '')}" placeholder="Es. 5-4-3-2-1-2-3-4-5">
+          </div>
+          <div class="field">
+            <label for="f-fing-dx-${ex.id}">Diteggiatura DX</label>
+            <input type="text" id="f-fing-dx-${ex.id}" class="f-fing-dx" value="${escapeAttr(ex.fingeringDx || '')}" placeholder="Es. 1-2-3-1-2-3-4-5">
+          </div>
+        </div>
+        ` : ''}
         <div class="status-row">
           <label>Stato</label>
           <div class="status-picker">
@@ -681,7 +693,9 @@ function buildExerciseBody(ex, cat, el, rerender) {
         </div>
       `;
     const bindField = (selector, prop, isNumber = false) => {
-        body.querySelector(selector).addEventListener('input', (e) => {
+        const fieldEl = body.querySelector(selector);
+        if (!fieldEl) return;
+        fieldEl.addEventListener('input', (e) => {
             ex[prop] = isNumber ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value;
             saveData();
             if (['name', 'speedSep', 'speedSepReachedDx', 'speedSepReachedSx', 'speedTog', 'speedTogReached'].includes(prop)) {
@@ -691,6 +705,8 @@ function buildExerciseBody(ex, cat, el, rerender) {
     };
     bindField('.f-name', 'name');
     bindField('.f-pdf', 'pdf');
+    bindField('.f-fing-sx', 'fingeringSx');
+    bindField('.f-fing-dx', 'fingeringDx');
     bindField('.f-speed-sep', 'speedSep', true);
     bindField('.f-speed-sep-reached-dx', 'speedSepReachedDx', true);
     bindField('.f-speed-sep-reached-sx', 'speedSepReachedSx', true);
@@ -1377,7 +1393,7 @@ function renderArpeggiExercises() {
 document.getElementById('btn-add-exercise-arpeggi').addEventListener('click', () => {
     const cat = appData.categories.find(c => c.id === 'arpeggi');
     if (!cat) return;
-    cat.exercises.push({ id: uid('ex'), name: '', pdf: '', speedSep: null, speedSepReachedDx: null, speedSepReachedSx: null, speedTog: null, speedTogReached: null, _open: true });
+    cat.exercises.push({ id: uid('ex'), name: '', pdf: '', fingeringSx: '', fingeringDx: '', speedSep: null, speedSepReachedDx: null, speedSepReachedSx: null, speedTog: null, speedTogReached: null, _open: true });
     saveData();
     renderArpeggiExercises();
 });

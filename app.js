@@ -155,6 +155,9 @@ function normalizeData(d) {
     if (!d.categories.find(c => c.id === 'armonia')) {
         d.categories.push({ id: 'armonia', name: 'Crea Armonia', exercises: [], color: '#9BF6FF', special: 'armonia' });
     }
+    if (!d.categories.find(c => c.id === 'kontakt-prog')) {
+        d.categories.push({ id: 'kontakt-prog', name: 'Progressioni Kontakt', exercises: [], color: '#FFD6A5', special: 'kontaktProg' });
+    }
     if (!Array.isArray(d.lezioni)) d.lezioni = [];
     d.lezioni.forEach(l => {
         if (!l.note || typeof l.note !== 'object') l.note = {};
@@ -345,7 +348,7 @@ const Metronome = {
 // 5. NAVIGAZIONE
 // ============================================================
 function showView(viewId) {
-    ['view-home', 'view-cat', 'view-lezioni', 'view-circle', 'view-scale-list', 'view-arpeggi', 'view-komplete', 'view-improv', 'view-armonia'].forEach(id => {
+    ['view-home', 'view-cat', 'view-lezioni', 'view-circle', 'view-scale-list', 'view-arpeggi', 'view-komplete', 'view-improv', 'view-armonia', 'view-kontaktprog'].forEach(id => {
         document.getElementById(id).classList.toggle('hidden', id !== viewId);
     });
 }
@@ -360,6 +363,7 @@ function navigateToCategory(catId) {
     else {
         const cat = appData.categories.find(c => c.id === catId);
         if (cat && cat.special === 'armonia') openArmonia();
+        else if (cat && cat.special === 'kontaktProg') openKontaktProg();
         else openCategory(catId);
     }
 }
@@ -591,7 +595,7 @@ function renderExerciseListInto(cat, listElId, rerender) {
 document.getElementById('btn-add-exercise').addEventListener('click', () => {
     const cat = appData.categories.find(c => c.id === currentCatId);
     if (!cat) return;
-    cat.exercises.push({ id: uid('ex'), name: '', pdf: '', speedSep: null, speedTog: null, _open: true });
+    cat.exercises.push({ id: uid('ex'), name: '', pdf: '', speedSep: null, speedSepReachedDx: null, speedSepReachedSx: null, speedTog: null, speedTogReached: null, _open: true });
     saveData();
     renderCategory();
 });
@@ -612,8 +616,11 @@ function buildExerciseHead(ex) {
 
 function buildChips(ex) {
     const chips = [];
-    if (ex.speedSep) chips.push(`<span class="chip">MS ${ex.speedSep} bpm</span>`);
-    if (ex.speedTog) chips.push(`<span class="chip">MU ${ex.speedTog} bpm</span>`);
+    if (ex.speedSep) chips.push(`<span class="chip">MS obiettivo ${ex.speedSep} bpm</span>`);
+    if (ex.speedSepReachedDx) chips.push(`<span class="chip">MS DX raggiunto ${ex.speedSepReachedDx} bpm</span>`);
+    if (ex.speedSepReachedSx) chips.push(`<span class="chip">MS SX raggiunto ${ex.speedSepReachedSx} bpm</span>`);
+    if (ex.speedTog) chips.push(`<span class="chip">MU obiettivo ${ex.speedTog} bpm</span>`);
+    if (ex.speedTogReached) chips.push(`<span class="chip">MU raggiunto ${ex.speedTogReached} bpm</span>`);
     return chips.join('');
 }
 
@@ -640,13 +647,32 @@ function buildExerciseBody(ex, cat, el, rerender) {
         </div>
         <div class="speed-row">
           <div class="bpm-field">
-            <label for="f-speed-sep-${ex.id}">Velocità mani separate</label>
+            <label for="f-speed-sep-${ex.id}">Velocità mani separate — Obiettivo</label>
             <select id="f-speed-sep-${ex.id}" class="f-speed-sep">${buildBpmOptions(ex.speedSep)}</select>
             <span class="unit">bpm</span>
           </div>
           <div class="bpm-field">
-            <label for="f-speed-tog-${ex.id}">Velocità mani unite</label>
+            <label for="f-speed-tog-${ex.id}">Velocità mani unite — Obiettivo</label>
             <select id="f-speed-tog-${ex.id}" class="f-speed-tog">${buildBpmOptions(ex.speedTog)}</select>
+            <span class="unit">bpm</span>
+          </div>
+        </div>
+        <div class="speed-row">
+          <div class="bpm-field">
+            <label for="f-speed-sep-reached-dx-${ex.id}">Velocità mani separate — Raggiunto (Mano DX)</label>
+            <select id="f-speed-sep-reached-dx-${ex.id}" class="f-speed-sep-reached-dx">${buildBpmOptions(ex.speedSepReachedDx)}</select>
+            <span class="unit">bpm</span>
+          </div>
+          <div class="bpm-field">
+            <label for="f-speed-sep-reached-sx-${ex.id}">Velocità mani separate — Raggiunto (Mano SX)</label>
+            <select id="f-speed-sep-reached-sx-${ex.id}" class="f-speed-sep-reached-sx">${buildBpmOptions(ex.speedSepReachedSx)}</select>
+            <span class="unit">bpm</span>
+          </div>
+        </div>
+        <div class="speed-row">
+          <div class="bpm-field">
+            <label for="f-speed-tog-reached-${ex.id}">Velocità mani unite — Raggiunto</label>
+            <select id="f-speed-tog-reached-${ex.id}" class="f-speed-tog-reached">${buildBpmOptions(ex.speedTogReached)}</select>
             <span class="unit">bpm</span>
           </div>
         </div>
@@ -658,7 +684,7 @@ function buildExerciseBody(ex, cat, el, rerender) {
         body.querySelector(selector).addEventListener('input', (e) => {
             ex[prop] = isNumber ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value;
             saveData();
-            if (['name', 'speedSep', 'speedTog'].includes(prop)) {
+            if (['name', 'speedSep', 'speedSepReachedDx', 'speedSepReachedSx', 'speedTog', 'speedTogReached'].includes(prop)) {
                 refreshHead(el, ex);
             }
         });
@@ -666,7 +692,10 @@ function buildExerciseBody(ex, cat, el, rerender) {
     bindField('.f-name', 'name');
     bindField('.f-pdf', 'pdf');
     bindField('.f-speed-sep', 'speedSep', true);
+    bindField('.f-speed-sep-reached-dx', 'speedSepReachedDx', true);
+    bindField('.f-speed-sep-reached-sx', 'speedSepReachedSx', true);
     bindField('.f-speed-tog', 'speedTog', true);
+    bindField('.f-speed-tog-reached', 'speedTogReached', true);
 
     body.querySelectorAll('.status-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -807,7 +836,7 @@ function refreshLezioneHead(el, lez) {
 }
 
 // Categorie escluse di default dalle nuove lezioni (puoi comunque riaggiungerle a mano).
-const LEZIONI_DEFAULT_ESCLUSE = ['komplete', 'improvvisazione', 'armonia'];
+const LEZIONI_DEFAULT_ESCLUSE = ['komplete', 'improvvisazione', 'armonia', 'kontakt-prog'];
 
 function defaultActiveCats() {
     return appData.categories.filter(c => !LEZIONI_DEFAULT_ESCLUSE.includes(c.id)).map(c => c.id);
@@ -1135,7 +1164,7 @@ function renderScaleExercises() {
 document.getElementById('btn-add-exercise-scale').addEventListener('click', () => {
     const cat = appData.categories.find(c => c.id === 'scale');
     if (!cat) return;
-    cat.exercises.push({ id: uid('ex'), name: '', pdf: '', speedSep: null, speedTog: null, _open: true });
+    cat.exercises.push({ id: uid('ex'), name: '', pdf: '', speedSep: null, speedSepReachedDx: null, speedSepReachedSx: null, speedTog: null, speedTogReached: null, _open: true });
     saveData();
     renderScaleExercises();
 });
@@ -1348,7 +1377,7 @@ function renderArpeggiExercises() {
 document.getElementById('btn-add-exercise-arpeggi').addEventListener('click', () => {
     const cat = appData.categories.find(c => c.id === 'arpeggi');
     if (!cat) return;
-    cat.exercises.push({ id: uid('ex'), name: '', pdf: '', speedSep: null, speedTog: null, _open: true });
+    cat.exercises.push({ id: uid('ex'), name: '', pdf: '', speedSep: null, speedSepReachedDx: null, speedSepReachedSx: null, speedTog: null, speedTogReached: null, _open: true });
     saveData();
     renderArpeggiExercises();
 });
@@ -2427,6 +2456,94 @@ function initArmoniaModule() {
     document.getElementById("arm-undoBtn").addEventListener("click",()=>{ chain.pop(); document.getElementById("arm-presetSelect").value = ""; render(); });
     document.getElementById("arm-resetBtn").addEventListener("click",()=>{ chain=[]; document.getElementById("arm-presetSelect").value = ""; render(); });
     render();
+}
+
+// ============================================================
+// 14bis. PROGRESSIONI KONTAKT
+// Schede di consultazione statiche (stessa estetica scura della
+// sezione "Crea Armonia") con i voicing mano sinistra / mano
+// destra pensati per il playback in Kontakt.
+// ============================================================
+const KONTAKT_PROGRESSIONI = [
+    {
+        title: '🎬 "Blade Runner" Mood (Progressione Noir Synth)',
+        desc: 'Stile Vangelis: tensione cromatica e suoni analogici scuri/luminosi.',
+        accent: '#FBBF24',
+        rows: [
+            { lh: 'C2 – G2', chord: 'Csus2(#11)', rh: 'D4 – F#4 – G4 – B4' },
+            { lh: 'Bb1 – F2', chord: 'Bbm9', rh: 'Db4 – F4 – Ab4 – C5' },
+            { lh: 'Ab1 – Eb2', chord: 'Abmaj7(#11)', rh: 'C4 – D4 – Eb4 – G4' },
+            { lh: 'G1 – D2', chord: 'G7(b9/b13)', rh: 'B3 – Eb4 – F4 – Ab4' },
+        ]
+    },
+    {
+        title: '🌌 "Interstellar" Mood (Progressione Spaziale Minore)',
+        desc: 'Stile Hans Zimmer: ciclo nostalgico adatto a organi, pad orchestrali e arpeggiatori.',
+        accent: '#60A5FA',
+        rows: [
+            { lh: 'A1 – E2', chord: 'Am(add9)', rh: 'B3 – C4 – E4 – G4' },
+            { lh: 'F1 – C2', chord: 'Fmaj7', rh: 'A3 – C4 – E4 – G4' },
+            { lh: 'C2 – G2', chord: 'Cadd9', rh: 'D4 – E4 – G4 – C5' },
+            { lh: 'G1 – D2', chord: 'G / Gsus4', rh: 'C4 – D4 – G4 – B4' },
+        ]
+    },
+    {
+        title: '🌠 Sospensione Cosmica (Progressione Ambient Modulare)',
+        desc: 'Assenza di gravità: accordi sus2/sus4 per esplorare riverberi lunghi e modulazioni.',
+        accent: '#34D399',
+        rows: [
+            { lh: 'F1 – C2', chord: 'Fsus2', rh: 'G3 – A3 – C4 – F4' },
+            { lh: 'G1 – D2', chord: 'Gsus4', rh: 'C4 – D4 – G4 – D5' },
+            { lh: 'A1 – E2', chord: 'Asus2', rh: 'B3 – E4 – A4 – B4' },
+            { lh: 'D1 – A1', chord: 'Dmsus2', rh: 'E3 – F3 – A3 – D4' },
+        ]
+    }
+];
+
+function openKontaktProg() {
+    showView('view-kontaktprog');
+    applySectionHeader('view-kontaktprog', 'kontakt-prog', 'kontaktprog-title-text');
+    if (!window._kontaktProgInitialized) {
+        renderKontaktProgressioni();
+        window._kontaktProgInitialized = true;
+    }
+}
+
+function renderKontaktProgressioni() {
+    const grid = document.getElementById('kp-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    KONTAKT_PROGRESSIONI.forEach(prog => {
+        const card = document.createElement('div');
+        card.className = 'kp-card';
+        card.style.setProperty('--kp-accent', prog.accent);
+        const chainHtml = prog.rows.map((r, i) =>
+            (i > 0 ? '<span class="kp-arrow">&rarr;</span>' : '') + `<span class="kp-chip">${escapeHtml(r.chord)}</span>`
+        ).join('');
+        const rowsHtml = prog.rows.map(r =>
+            `<tr><td>${escapeHtml(r.lh)}</td><td>${escapeHtml(r.chord)}</td><td>${escapeHtml(r.rh)}</td></tr>`
+        ).join('');
+        card.innerHTML = `
+          <h3>${prog.title}</h3>
+          <p class="kp-desc">${escapeHtml(prog.desc)}</p>
+          <div class="kp-chain-row">${chainHtml}</div>
+          <table class="kp-table">
+            <thead><tr><th>Mano Sinistra (2 Voci)</th><th>Accordo</th><th>Note Mano Destra</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+          <button class="kp-copy-btn" type="button">📋 Copia sequenza</button>
+        `;
+        card.querySelector('.kp-copy-btn').addEventListener('click', () => {
+            const seq = prog.rows.map(r => r.chord).join(' → ');
+            const btn = card.querySelector('.kp-copy-btn');
+            const original = btn.textContent;
+            navigator.clipboard?.writeText(seq).then(() => {
+                btn.textContent = '✅ Copiato!';
+                setTimeout(() => { btn.textContent = original; }, 1500);
+            }).catch(() => {});
+        });
+        grid.appendChild(card);
+    });
 }
 
 // Controllo di sicurezza per evitare il crash se il bottone non è ancora renderizzato

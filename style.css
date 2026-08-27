@@ -2201,6 +2201,44 @@ textarea { resize: vertical; min-height: 54px; }
 #view-armonia .arm-voicing-notes { color: var(--arm-text); font-size: 0.78rem; font-family: monospace; }
 
 /* ============================================================
+   PROGRESSIONI KONTAKT
+   Stessa estetica scura di #view-armonia (variabili --arm-*),
+   ma come schede di consultazione statiche invece del cerchio
+   interattivo, per presentare le progressioni pronte per Kontakt.
+   ============================================================ */
+#view-kontaktprog {
+  --arm-bg: #0B0B14;
+  --arm-panel: #14141F;
+  --arm-panel-border: #24243a;
+  --arm-text: #E5E7EB;
+  --arm-muted: #9CA3AF;
+  --arm-major: #F472B6;
+  background: radial-gradient(ellipse at 50% 0%, #14142a 0%, var(--arm-bg) 60%);
+  color: var(--arm-text);
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 26px 16px 60px;
+  border-radius: 16px;
+}
+#view-kontaktprog .arm-subtitle { color: var(--arm-muted); font-size: 0.9rem; text-align: center; max-width: 560px; margin: 0 auto 22px; line-height: 1.5; }
+#view-kontaktprog .kp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; width: 100%; max-width: 1000px; }
+#view-kontaktprog .kp-card { background: var(--arm-panel); border: 1px solid var(--arm-panel-border); border-radius: 16px; padding: 18px 20px; }
+#view-kontaktprog .kp-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.02rem; margin: 0 0 4px; color: var(--arm-text); }
+#view-kontaktprog .kp-desc { color: var(--arm-muted); font-size: 0.82rem; font-style: italic; margin: 0 0 14px; line-height: 1.45; }
+#view-kontaktprog .kp-chain-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 16px; }
+#view-kontaktprog .kp-chip { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.85rem; padding: 6px 12px; border-radius: 10px; border: 2px solid var(--kp-accent, var(--arm-major)); color: var(--kp-accent, var(--arm-major)); background: #0B0B14; }
+#view-kontaktprog .kp-arrow { color: var(--arm-muted); font-size: 1rem; margin: 0 1px; }
+#view-kontaktprog table.kp-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+#view-kontaktprog table.kp-table th { text-align: left; color: var(--arm-muted); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 8px; border-bottom: 1px solid var(--arm-panel-border); }
+#view-kontaktprog table.kp-table td { padding: 7px 8px; border-bottom: 1px solid var(--arm-panel-border); color: var(--arm-text); font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; }
+#view-kontaktprog table.kp-table tr:last-child td { border-bottom: none; }
+#view-kontaktprog table.kp-table td:nth-child(2) { color: var(--kp-accent, var(--arm-major)); font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+#view-kontaktprog .kp-copy-btn { margin-top: 14px; background: none; border: 1px solid var(--arm-panel-border); color: var(--arm-muted); font-family: 'Inter', sans-serif; font-size: 0.78rem; padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+#view-kontaktprog .kp-copy-btn:hover { color: var(--arm-text); border-color: #3a3a55; }
+
+/* ============================================================
    LEZIONI
 ============================================================ */
 .lez-home-card .count::before { content: '📅 ' !important; }

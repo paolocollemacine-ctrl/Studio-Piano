@@ -664,15 +664,15 @@ function buildExerciseBody(ex, cat, el, rerender) {
             <span class="unit">bpm</span>
           </div>
           <div class="bpm-field">
-            <label for="f-speed-sep-reached-sx-${ex.id}">Velocità mani separate — Raggiunto (Mano SX)</label>
-            <select id="f-speed-sep-reached-sx-${ex.id}" class="f-speed-sep-reached-sx">${buildBpmOptions(ex.speedSepReachedSx)}</select>
+            <label for="f-speed-tog-reached-${ex.id}">Velocità mani unite — Raggiunto</label>
+            <select id="f-speed-tog-reached-${ex.id}" class="f-speed-tog-reached">${buildBpmOptions(ex.speedTogReached)}</select>
             <span class="unit">bpm</span>
           </div>
         </div>
         <div class="speed-row">
           <div class="bpm-field">
-            <label for="f-speed-tog-reached-${ex.id}">Velocità mani unite — Raggiunto</label>
-            <select id="f-speed-tog-reached-${ex.id}" class="f-speed-tog-reached">${buildBpmOptions(ex.speedTogReached)}</select>
+            <label for="f-speed-sep-reached-sx-${ex.id}">Velocità mani separate — Raggiunto (Mano SX)</label>
+            <select id="f-speed-sep-reached-sx-${ex.id}" class="f-speed-sep-reached-sx">${buildBpmOptions(ex.speedSepReachedSx)}</select>
             <span class="unit">bpm</span>
           </div>
         </div>
